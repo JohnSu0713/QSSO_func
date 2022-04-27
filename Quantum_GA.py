@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 # ALGORITHM PARAMETERS                                  #
 #########################################################
 N = 30                  # Define here the population size (number of solutions)
-Genome = 100              # Define here the chromosome length (How many bits in each chromosome)
-generation_max = 100    # Define here the maximum number of
+Genome = 50              # Define here the chromosome length (How many bits in each chromosome)
+generation_max = 500    # Define here the maximum number of
 # generations/iterations
 
 #########################################################
@@ -22,15 +22,16 @@ QuBitZero = np.array([[1], [0]])
 QuBitOne = np.array([[0], [1]])
 AlphaBeta = np.empty([top_bottom])
 fitness = np.empty([popSize])
+gbest_fitness = 0
 probability = np.empty([popSize])
 # qpv: quantum chromosome (or population vector, QPV)
 qpv = np.empty([popSize, genomeLength, top_bottom])
 nqpv = np.empty([popSize, genomeLength, top_bottom])
 # chromosome: classical chromosome
-chromosome = np.empty([popSize, genomeLength], dtype=np.int)
+chromosome = np.empty([popSize, genomeLength], dtype=int)
 child1 = np.empty([popSize, genomeLength, top_bottom])
 child2 = np.empty([popSize, genomeLength, top_bottom])
-best_chrom = np.empty([generation_max], dtype=np.int)
+best_chrom = np.empty([generation_max], dtype=int)
 
 # Initialization global variables
 theta = 0
@@ -130,6 +131,7 @@ def Fitness_evaluation(generation):
     sum_sqr = 0
     fitness_average = 0
     variance = 0
+    global gbest_fitness
     for i in range(1, popSize):
         fitness[i] = 0
 
@@ -146,15 +148,11 @@ def Fitness_evaluation(generation):
             # translate from binary to decimal value
             x = x+chromosome[i, j]*pow(2, genomeLength-j-1)
             # replaces the value of x in the function f(x)
-            y = np.fabs((x-5)/(2+np.sin(x)))
-            # the fitness value is calculated below:
-            # (Note that in this example is multiplied
-            # by a scale value, e.g. 100)
-            fitness[i] = y*100
+    y = np.fabs((x-5)/(2+np.sin(x)))
+    fitness[i] = y*100
 #########################################################
-
-        print("fitness = ", i, " ", fitness[i])
-        fitness_total = fitness_total+fitness[i]
+    print("fitness = ", i, " ", fitness[i])
+    fitness_total = fitness_total+fitness[i]
     print()
     fitness_average = fitness_total/N
     i = 1
@@ -164,25 +162,29 @@ def Fitness_evaluation(generation):
     variance = sum_sqr/N
     if variance <= 1.0e-4:
         variance = 0.0
-    # Best chromosome selection
+
+    # Best chromosome update
     the_best_chrom = 0
     fitness_max = fitness[1]
     for i in range(1, popSize):
         if fitness[i] >= fitness_max:
             fitness_max = fitness[i]
             the_best_chrom = i
+        if fitness[i] >= gbest_fitness:
+            gbest_fitness = fitness[i]
+            # gbest_chrom = chromosome[i]
     print(f"best_chrom[{generation}] = {the_best_chrom}")
     best_chrom[generation] = the_best_chrom
 
     # Statistical output
     f = open("QGA_output.dat", "a")
-    f.write(str(generation)+" "+str(fitness_average)+"\n")
+    f.write(str(generation)+" "+str(gbest_fitness)+"\n")
     f.write(" \n")
     f.close()
     print("Population size = ", popSize - 1)
     print("mean fitness = ", fitness_average)
     print("variance = ", variance, " Std. deviation = ", math.sqrt(variance))
-    print("Global best fitness = ", fitness[best_chrom[generation]])
+    print("Global best fitness = ", gbest_fitness)
     print("Global best chromosome = ", chromosome[best_chrom[generation], 1:])
     print("fitness sum = ", fitness_total)
 
@@ -300,7 +302,6 @@ def Q_GA():
               1, " =========================== ")
         print()
         rotation()
-        # mutation(0.01, 0.001)
         generation = generation+1
         Measure()
         # Measure(0.5)
@@ -314,4 +315,4 @@ Q_GA()
 time_end = time.time()
 time_c = time_end - time_start  # 執行所花時間
 print('time cost', time_c, 's')
-# plot_Output()
+plot_Output()
